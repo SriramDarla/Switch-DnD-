@@ -1,9 +1,46 @@
+# DnD Campaign: three agents and the world-bible room they share.
+#
+# Switch Console creates each entry of `agents:`, in its own working
+# directory and backed by the coding agent the `provider` param names. The
+# server creates the `room:` with all agents in it. Every value the form
+# starts with is written under `params:`; the language is documented in
+# docs/TEMPLATES.md.
+
+version: 1
+
+params:
+  name:
+    type: string
+    description: Prefix for every name this creates
+    pattern: "[a-z][a-z0-9-]*"
+  provider:
+    type: provider
+    description: Which coding agent backs all three. The first one installed is chosen.
+    default: [claude, codex, opencode]
+    input: advanced
+  location:
+    type: location
+    description: The machine all agents run on.
+    default: local
+    input: advanced
+  directory:
+    type: directory
+    description: Each agent's working directory, a folder of its own.
+    default: "{$agents_dir}/{agent}"
+    input: advanced
+  bridge:
+    type: bridge
+    description: Where the room is mirrored. The server's default app is chosen.
+    default: [$first]
+
 agents:
   - name: "{name}-dungeon-master"
     description: Narrates the DnD campaign world, describes levels and quests, awards XP, and handles level-ups.
     addressing: anyone
     provider: "{provider}"
-    instructions: |-
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
       You are the Dungeon Master for a personal developer workflow campaign run inside a Switch room.
 
       The room's shared memory IS the World Bible. Everything real about this campaign lives there: character sheet, level, XP, quest log, and completed quests. Read from it before you narrate, and write to it whenever state changes.
@@ -26,7 +63,9 @@ agents:
     description: Assigns quests inside levels and creates new levels on request.
     addressing: anyone
     provider: "{provider}"
-    instructions: |-
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
       You are the Quest Giver for this DnD developer campaign.
 
       Your job: propose and assign quests inside levels. When a user wants work, suggest a level (realm) and a quest (adventure) with a difficulty and XP reward. Write the quest into the World Bible as "pending".
@@ -39,10 +78,12 @@ agents:
       When a user asks for work, ask which realm (level) they want, then propose a specific quest with XP. Do not award XP — that is the Dungeon Master's job.
 
   - name: "{name}-scribe"
-    description: Maintains the World Bible (shared memory): character sheet, quest log, XP, and levels.
+    description: "Maintains the World Bible (shared memory): character sheet, quest log, XP, and levels."
     addressing: owner-agents
     provider: "{provider}"
-    instructions: |-
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
       You are the Scribe. You maintain the World Bible, which is the room's shared memory.
 
       The World Bible contains:
@@ -60,8 +101,10 @@ agents:
 
 room:
   name: "{name}-world-bible"
+  description: The world bible — shared memory holding character sheet, XP, quest log, and levels for the DnD campaign.
   bridge: "{bridge}"
   agents: ["{name}-dungeon-master", "{name}-quest-giver", "{name}-scribe"]
   users: ["{$creator}"]
-kickoff: |-
+
+kickoff: |
   @{name}-dungeon-master and @{name}-scribe: The campaign begins. Initialize the World Bible in shared memory with an empty character sheet (level 1, 0 XP) and an empty quest log. Then narrate the opening: welcome the player to their personal DnD developer workflow, explain that levels are work realms and quests are tasks, and tell them to ask @{name}-quest-giver for their first adventure.
